@@ -9,6 +9,22 @@ import Text.Printf
 
 
 
+getDirections :: Int -> [String] -> IO [String]
+getDirections x directions= do
+    if x == -1
+        then
+            putStr "First direction: "
+        else
+            putStr "Next direction: "
+    direction <- getLine
+    if direction == ""
+        then 
+            return directions
+        else
+            do
+                getDirections (x+1) (directions ++ [direction]) 
+
+
 -- implement error handling for file doesnt exist
 load :: IO()
 load = do
@@ -19,6 +35,26 @@ load = do
         let map = lines textContents
         showMap map
         putStrLn "File loaded"
+        putStrLn "Enter play to begin game"
+        nextCommand <- getLine
+        if (nextCommand == "play") 
+                then do 
+                        directions <- getDirections (-1) []
+                        play map directions '-'
+        else
+                do
+                        putStrLn "Invalid command, start from beginning"
+                        load    
+
+
+play :: [String] -> [String] -> Char -> IO()
+play _ [] _ = return ()
+play map (d:ds) charOnWhichBallIsSitting = 
+        do
+                let updatedMapAfterOneMove = makeMove map d charOnWhichBallIsSitting
+                showMap updatedMapAfterOneMove
+                putStrLn " "
+                play updatedMapAfterOneMove ds '-'
 
 
 makeMove :: [String] -> String -> Char -> [String]
@@ -95,22 +131,5 @@ showMap [] = return ()
 showMap (l:ls) = do
     putStrLn l
     showMap ls
-
-
--- getDirection :: Int -> IO ()
--- getDirection x = do
---     if x == 0
---         then
---             putStr "First direction: "
---         else
---             putStr "Next direction: "
---     move <- getLine
---     if move == ""
---         then 
---             return ()
---         else
---             do
---                 putStrLn move
---                 getDirection (x+1)
 
             
