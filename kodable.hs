@@ -52,7 +52,8 @@ play _ [] _ = return ()
 play map (d:ds) charOnWhichBallIsSitting = 
         do
                 let updatedMapAfterOneMove = makeMove map d charOnWhichBallIsSitting
-                showMap updatedMapAfterOneMove                putStrLn " "
+                showMap updatedMapAfterOneMove                
+                putStrLn " "
                 play updatedMapAfterOneMove ds '-'
 
 
