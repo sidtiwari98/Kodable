@@ -4,35 +4,17 @@ import Control.Monad.State
 import System.IO  
 import Data.Char
 import Data.List
+import qualified Data.Text as T
 
 import Text.Printf
 
 
 
-getDirections :: Int -> [String] -> IO [String]
-getDirections x directions= do
-    if x == -1
-        then
-            putStr "First direction: "
-        else
-            putStr "Next direction: "
-    direction <- getLine
-    if direction == ""
-        then 
-            return directions
-        else
-                getDirections (x+1) (directions ++ parseDirections direction) 
-
-
-parseDirections :: String -> [String]
-parseDirections direction
-        | length direction > 4 && take 4 direction == "Cond" = [ [(direction !! 5)] , take (length(direction) - 1 - 8) (drop 8 direction) ] 
-        | otherwise = [direction]
-
-
 -- getNextDirection :: [String] -> (String, String)
 -- getNextDirection (x:y:ys) = (x,y)
 -- getNextDirection (x:xs) = (x,x)
+
+
 
 
 -- implement error handling for file doesnt exist
@@ -56,8 +38,7 @@ load = do
                 do
                         putStrLn "Invalid command, start from beginning"
                         load    
-
-
+  
 play :: [String] -> [String] -> Char -> IO()
 play _ [] _ = return ()
 play map directions charOnWhichBallIsSitting = 
@@ -90,15 +71,50 @@ play map directions charOnWhichBallIsSitting =
                                                 putStrLn " "  
                                 else
                                         putStrLn " " 
-
                                 let (ballXNew, ballYNew) =  head (currentPositionOfCharacters updatedMap '@')
                                 if ([[(map !! ballXNew)!! ballYNew]] == take 1 (tail directions))
                                         then 
-                                                play updatedMap (drop 2 directions) ((map !! ballXNew)!! ballYNew)
+                                                play updatedMap (drop 2 directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))
                                 else
-                                        play updatedMap (tail directions) ((map !! ballXNew)!! ballYNew)   
+                                        play updatedMap (tail directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))   
 
 
+-- stringSplit ';' "a;bb;ccc;;d"
+stringSplit :: Eq a => a -> [a] -> [[a]]
+stringSplit d [] = []
+stringSplit d s = x : stringSplit d (drop 1 y) where (x,y) = span (/= d) s
+
+getBallPositionOnPrevMap :: [String] -> (Int,Int) -> Char
+getBallPositionOnPrevMap map (ballXNew, ballYNew) = 
+        if (((map !! ballXNew)!! ballYNew) == 'b')
+                then '-'
+        else
+            ((map !! ballXNew)!! ballYNew)  
+
+getDirections :: Int -> [String] -> IO [String]
+getDirections x directions= do
+    if x == -1
+        then
+            putStr "First direction: "
+        else
+            putStr "Next direction: "
+    direction <- getLine
+    if direction == ""
+        then 
+            return directions
+        else
+                getDirections (x+1) (directions ++ parseDirections direction) 
+
+
+parseDirections :: String -> [String]
+parseDirections directions
+        | length directions > 4 && take 4 directions == "Cond" = [ [(directions !! 5)] , take (len - 1 - 8) (drop 8 directions) ]
+        | length directions > 4 && take 4 directions == "Loop" = parseLoop (take (len - 8 -1) $ drop 8 directions) (read (take 1 (drop 5 directions)) ::Int)
+        | otherwise = [directions]
+        where len = length(directions)
+
+parseLoop :: String -> Int -> [String]
+parseLoop loopCommand iterations = concat $ replicate iterations (stringSplit ',' loopCommand)
 
 makeMove :: [String] -> [String] -> Char -> [String]
 makeMove map (d:ds) charOnWhichBallIsSitting
