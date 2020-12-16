@@ -109,9 +109,11 @@ getDirections x directions= do
 parseDirections :: String -> [String]
 parseDirections directions
         | length directions > 4 && take 4 directions == "Cond" = [ [(directions !! 5)] , take (len - 1 - 8) (drop 8 directions) ]
-        | length directions > 4 && take 4 directions == "Loop" = parseLoop (take (len - 8 -1) $ drop 8 directions) (read (take 1 (drop 5 directions)) ::Int)
+        | length directions > 4 && take 4 directions == "Loop" = concatMap parseDirections loopParsed
         | otherwise = [directions]
-        where len = length(directions)
+        where 
+                len = length(directions)
+                loopParsed = parseLoop (take (len - 8 -1) $ drop 8 directions) (read (take 1 (drop 5 directions)) ::Int)
 
 parseLoop :: String -> Int -> [String]
 parseLoop loopCommand iterations = concat $ replicate iterations (stringSplit ',' loopCommand)
