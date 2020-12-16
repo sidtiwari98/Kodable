@@ -31,19 +31,25 @@ load = do
         nextCommand <- getLine
         if (nextCommand == "play") 
                 then do 
-                        directions <- getDirections (-1) []
-                        -- showMap directions
+                        directions <- getDirections (-1) [] []
                         play map directions '-'
         else
-                do
-                        putStrLn "Invalid command, start from beginning"
-                        load    
+                if (take 5 nextCommand == "play ")
+                        then do
+                                let functionDirections = stringSplit ' ' (drop 5 nextCommand)
+                                directions <- getDirections (-1) [] functionDirections
+                                play map directions '-'
+                else
+                        do
+                                putStrLn "Invalid command, start from beginning"
+                                load    
   
 play :: [String] -> [String] -> Char -> IO()
 play _ [] _ = return ()
 play map directions charOnWhichBallIsSitting = 
         do
                 let updatedMap = makeMove map directions charOnWhichBallIsSitting
+
                 -- showMap directions
                 if (map == updatedMap)
                         then do
@@ -91,19 +97,21 @@ getBallPositionOnPrevMap map (ballXNew, ballYNew) =
         else
             ((map !! ballXNew)!! ballYNew)  
 
-getDirections :: Int -> [String] -> IO [String]
-getDirections x directions= do
-    if x == -1
+getDirections :: Int -> [String] -> [String] -> IO [String]
+getDirections x directions functionDirections = do
+    if (x == -1)
         then
             putStr "First direction: "
         else
             putStr "Next direction: "
     direction <- getLine
-    if direction == ""
+    if (direction == "")
         then 
             return directions
         else
-                getDirections (x+1) (directions ++ parseDirections direction) 
+                if (direction == "Function")
+                        then getDirections (x+1) (directions ++ concatMap parseDirections functionDirections) functionDirections
+                else getDirections (x+1) (directions ++ parseDirections direction) functionDirections
 
 
 parseDirections :: String -> [String]
