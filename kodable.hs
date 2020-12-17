@@ -1,11 +1,30 @@
+module Kodable
+(
+        load,
+        play,
+        stringSplit,
+        getBallPositionOnPrevMap,
+        getDirections,
+        parseDirections,
+        parseLoop,
+        makeMove,
+        moveBallUp,
+        moveBallUpOnce,
+        moveBallDown,
+        moveBallDownOnce,
+        moveBallRight,
+        moveBallRightOnce,
+        moveBallLeft,
+        moveBallLeftOnce,
+        currentPositionOfCharacters,
+        showMap
+) where 
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
 import System.IO  
 import Data.Char
 import Data.List
-import qualified Data.Text as T
-
 import Text.Printf
 
 
@@ -43,7 +62,7 @@ load = do
                         do
                                 putStrLn "Invalid command, start from beginning"
                                 load    
-  
+
 play :: [String] -> [String] -> Char -> IO()
 play _ [] _ = return ()
 play map directions charOnWhichBallIsSitting = 
