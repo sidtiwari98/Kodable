@@ -1,3 +1,15 @@
+module MazeSolver (
+    isSolvable,
+    solveMaze,
+    newPositionOfBall,
+    getPossibleDirections,
+    dimensionOfMaze,
+    notInVisited,
+    upPossible,
+    downPossible,
+    rightPossible,
+    leftPossible
+)where
 import Kodable
 import Control.Applicative
 import Control.Monad

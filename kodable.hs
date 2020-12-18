@@ -27,16 +27,6 @@ import Data.Char
 import Data.List
 import Text.Printf
 
-
-
--- getNextDirection :: [String] -> (String, String)
--- getNextDirection (x:y:ys) = (x,y)
--- getNextDirection (x:xs) = (x,x)
-
-
-
-
--- implement error handling for file doesnt exist
 load :: IO()
 load = do
         putStrLn "Enter the file name you want to load"
@@ -51,13 +41,20 @@ load = do
         if (nextCommand == "play") 
                 then do 
                         directions <- getDirections (-1) [] []
-                        play map directions '-'
+                        if (length directions == 0) then
+                                putStrLn "Invalid move"
+                        else
+                                play map directions '-'
         else
                 if (take 5 nextCommand == "play ")
                         then do
                                 let functionDirections = stringSplit ' ' (drop 5 nextCommand)
                                 directions <- getDirections (-1) [] functionDirections
-                                play map directions '-'
+                                if (length directions == 0) then
+                                        putStrLn "Invalid move"
+                                else
+                                        play map directions '-'
+                                -- play map directions '-'
                 else
                         do
                                 putStrLn "Invalid command, start from beginning"
@@ -104,7 +101,7 @@ play map directions charOnWhichBallIsSitting =
                                         play updatedMap (tail directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))   
 
 
--- stringSplit ';' "a;bb;ccc;;d"
+-- stringSplit ',' "a,b,c"
 stringSplit :: Eq a => a -> [a] -> [[a]]
 stringSplit d [] = []
 stringSplit d s = x : stringSplit d (drop 1 y) where (x,y) = span (/= d) s
@@ -125,13 +122,12 @@ getDirections x directions functionDirections = do
             putStr "Next direction: "
     direction <- getLine
     if (direction == "")
-        then 
-            return directions
+        then
+                return directions
         else
                 if (direction == "Function")
                         then getDirections (x+1) (directions ++ concatMap parseDirections functionDirections) functionDirections
                 else getDirections (x+1) (directions ++ parseDirections direction) functionDirections
-
 
 parseDirections :: String -> [String]
 parseDirections directions
@@ -157,9 +153,6 @@ makeMove map (d:ds) charOnWhichBallIsSitting
                 ballRow = fst(head(positionOfBall))
                 ballColumn = snd(head(positionOfBall))
 
-
-
-
 moveBallUp ::  [String] -> Char -> (Int, Int) -> [String] -> [String]
 moveBallUp map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir= 
         if (ballRow > 0)
@@ -182,7 +175,6 @@ moveBallUp map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir=
         else map
         where 
                 nextChar = (map !! (ballRow-1)) !! ballColumn
-
 
 moveBallUpOnce :: [String] -> Char -> (Int, Int) -> [String]
 moveBallUpOnce map charOnWhichBallIsSitting (ballRow, ballColumn) = 
@@ -213,7 +205,6 @@ moveBallDown map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir =
         else map
         where 
                 nextChar = (map !! (ballRow+1)) !! ballColumn
-
 
 moveBallDownOnce :: [String] -> Char -> (Int, Int) -> [String]
 moveBallDownOnce map charOnWhichBallIsSitting (ballRow, ballColumn) = 
