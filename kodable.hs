@@ -17,13 +17,21 @@ load s= do
         putStrLn "File loaded!"
         putStrLn "Initial: "
         showMap map
-        putStrLn "Enter:"
-        putStrLn "check - to see if map is solvable"
-        putStrLn "solve - to get the solution of the map"
-        putStrLn "quit - to quit the game"
-        putStrLn "play - to begin game"
-        nextCommand <- getLine 
-        gameCommandHandler map s nextCommand           
+        putStrLn "Checking validity of map..."
+        if (isMapValid map) 
+                then do
+                        putStrLn "The map is valid."
+                        putStrLn "Enter:"
+                        putStrLn "check - to see if map is solvable"
+                        putStrLn "solve - to get the solution of the map"
+                        putStrLn "quit - to quit the game"
+                        putStrLn "play - to begin game"
+                        nextCommand <- getLine 
+                        gameCommandHandler map s nextCommand  
+        else 
+                do
+                        putStrLn "The map is invalid. Please ensure you have 1 ball, 1 target and 3 bonud"
+                        return ()          
 
 loadSavedMap :: IO()
 loadSavedMap = do
@@ -35,16 +43,23 @@ loadSavedMap = do
                         do
                                 textContents <- readFile "savedMap.txt"
                                 let map = stringSplit ',' textContents
-                                putStrLn "File loaded!"
-                                putStrLn "Initial: "
-                                showMap map
-                                putStrLn "Enter:"
-                                putStrLn "check - to see if map is solvable"
-                                putStrLn "solve - to get the solution of the map"
-                                putStrLn "quit - to quit the game"
-                                putStrLn "play - to begin game"
-                                nextCommand <- getLine
-                                gameCommandHandler map "saveMap.txt" nextCommand                  
+                                if (isMapValid map) 
+                                        then do
+                                                putStrLn "The map is valid."
+                                                putStrLn "File loaded!"
+                                                putStrLn "Initial: "
+                                                showMap map
+                                                putStrLn "Enter:"
+                                                putStrLn "check - to see if map is solvable"
+                                                putStrLn "solve - to get the solution of the map"
+                                                putStrLn "quit - to quit the game"
+                                                putStrLn "play - to begin game"
+                                                nextCommand <- getLine
+                                                gameCommandHandler map "saveMap.txt" nextCommand  
+                                else 
+                                        do
+                                                putStrLn "The map is invalid. Please ensure you have 1 ball, 1 target and 3 bonud"
+                                                return ()                
 
 
 gameCommandHandler :: [String] -> String -> String -> IO()
@@ -121,8 +136,9 @@ play map [] charOnWhichBallIsSitting =
                                                 putStrLn (show $ 3- length (currentPositionOfCharacters map 'b')) 
                 else
                         do
-                                putStrLn "The game has not been completed.For a hint type \"hint\". To save type \"save\". To quit type quit \"quit\""
-                                putStrLn "For hint, please wait a few seconds for a hint to appear"
+                                putStrLn "The game has not been completed.For a hint type \"hint\". To save type \"save\". To quit type quit \"quit\"."
+                                putStrLn "For hint, please wait a few seconds for a hint to appear."
+                                putStrLn "To play a saved game, use the loadSavedMap function to start the game."
                                 command <- getLine
                                 gameCommandHandler map "none" command
 
@@ -174,36 +190,7 @@ play map directions charOnWhichBallIsSitting =
                                         play updatedMap (drop 2 directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))
                                 else
                                         play updatedMap (tail directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))  
-
-getSaveMap :: IO [String]
-getSaveMap = do 
-                all <- getDirectoryContents "./"
-                let savedMap = filter (isSuffixOf "savedMap.txt") all
-                return savedMap
-
-saveMap :: [String] -> IO ()
-saveMap map =  writeFile "savedMap.txt" (mapToString map)
-
-mapToString :: [String] -> String
-mapToString [] = ""
-mapToString (s:ss) = s ++ [','] ++ (mapToString ss)
-
-
-getHint :: [String] -> [String]
-getHint maze  = take 1 (optimalSolution maze)
-
--- stringSplit ',' "a,b,c"
-stringSplit :: Eq a => a -> [a] -> [[a]]
-stringSplit d [] = []
-stringSplit d s = x : stringSplit d (drop 1 y) where (x,y) = span (/= d) s
-
-getBallPositionOnPrevMap :: [String] -> (Int,Int) -> Char
-getBallPositionOnPrevMap map (ballXNew, ballYNew) = 
-        if (((map !! ballXNew)!! ballYNew) == 'b')
-                then '-'
-        else
-            ((map !! ballXNew)!! ballYNew)  
-
+  
 getDirections :: Int -> [String] -> [String] -> IO [String]
 getDirections x directions functionDirections = do
     if (x == -1)
@@ -233,6 +220,43 @@ parseLoop :: String -> Int -> [String]
 parseLoop loopCommand iterations = concat $ replicate iterations (stringSplit ',' loopCommand)
 
 
+getSaveMap :: IO [String]
+getSaveMap = do 
+                all <- getDirectoryContents "./"
+                let savedMap = filter (isSuffixOf "savedMap.txt") all
+                return savedMap
+
+saveMap :: [String] -> IO ()
+saveMap map =  writeFile "savedMap.txt" (mapToString map)
+
+mapToString :: [String] -> String
+mapToString [] = ""
+mapToString (s:ss) = s ++ [','] ++ (mapToString ss)
+
+
+getHint :: [String] -> [String]
+getHint maze  = take 1 (optimalSolution maze)
+
+-- stringSplit ',' "a,b,c"
+stringSplit :: Eq a => a -> [a] -> [[a]]
+stringSplit d [] = []
+stringSplit d s = x : stringSplit d (drop 1 y) where (x,y) = span (/= d) s
+
+getBallPositionOnPrevMap :: [String] -> (Int,Int) -> Char
+getBallPositionOnPrevMap map (ballXNew, ballYNew) = 
+        if (((map !! ballXNew)!! ballYNew) == 'b')
+                then '-'
+        else
+            ((map !! ballXNew)!! ballYNew)
+
+isMapValid :: [String] -> Bool
+isMapValid map
+        | (length numberOfBall) == 1 && (length numberOfTarget) == 1 && (length numberOfBonus) == 3 = True
+        | otherwise =  False
+        where
+                numberOfBall = currentPositionOfCharacters map '@'
+                numberOfTarget =  currentPositionOfCharacters map 't'
+                numberOfBonus = currentPositionOfCharacters map 'b'
 makeMove :: [String] -> [String] -> Char -> [String]
 makeMove map (d:ds) charOnWhichBallIsSitting
         | d == "Right" = take ballRow map ++ [moveBallRight (map !! ballRow) charOnWhichBallIsSitting ballColumn (take 1 ds)] ++  drop(ballRow + 1) map
