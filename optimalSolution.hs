@@ -7,10 +7,29 @@ import System.IO
 import Data.Char
 import Data.List
 import Text.Printf
+import Data.Ord
 
 
 deleteBonus :: [String] -> (Int, Int) -> [String]
 deleteBonus maze (bonusX, bonusY) = take bonusX maze ++ [(take bonusY (maze !! bonusX) ++ ['-'] ++ drop (bonusY +1) (maze !! bonusX))] ++ drop (bonusX + 1) maze
+
+optimalSolution :: [String] -> [String]
+optimalSolution maze = optimalPathShortner $ optimalPath (allSolution maze (ballX, ballY) [] bonusCount [(ballX, ballY, bonusCount)])
+                        where
+                            (ballX, ballY) = head $ currentPositionOfCharacters maze '@'
+                            bonusCount = 3 - length (currentPositionOfCharacters maze 'b')
+
+optimalPathShortner :: [String] -> [String]
+optimalPathShortner [] = []
+optimalPathShortner [direction] = [direction]
+optimalPathShortner (d1: d2: d) =   if d1 == take (length(d2) - 1 - 8) (drop 8 d2)
+                                        then [d1] ++ optimalPathShortner d
+                                    else
+                                        [d1] ++ optimalPathShortner([d2] ++ d)
+                                
+
+optimalPath :: (Foldable t1, Foldable t2) => t1 (t2 a) -> t2 a
+optimalPath allsolutions = minimumBy (comparing length) allsolutions
 
 allSolution :: [String] -> (Int, Int) -> [String] -> Int -> [(Int, Int, Int)] -> [[String]]
 allSolution maze (ballX, ballY) currentSolution bonusCount visited
@@ -108,3 +127,4 @@ goDown maze (ballX, ballY) bonusCount
     where
         (ballXNew, ballYNew) = newPositionOfBall (ballX, ballY) "Down"
         nextCharOfBall =  (maze !! ballXNew) !! ballYNew
+

@@ -66,7 +66,6 @@ play map directions charOnWhichBallIsSitting =
         do
                 let updatedMap = makeMove map directions charOnWhichBallIsSitting
 
-                -- showMap directions
                 if (map == updatedMap)
                         then do
                                 if (length (head(directions)) == 1)
@@ -170,7 +169,9 @@ moveBallUp map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir=
                                 
                                 'p' ->  if (nextDir == [['p']]) then moveBallUpOnce map charOnWhichBallIsSitting (ballRow, ballColumn)
                                         else moveBallUp (moveBallUpOnce map charOnWhichBallIsSitting (ballRow, ballColumn)) nextChar (ballRow -1, ballColumn) nextDir
-                                
+                        
+                                't' ->  moveBallUpOnce map charOnWhichBallIsSitting (ballRow, ballColumn)                                
+                        
                                 _   -> map
         else map
         where 
@@ -185,7 +186,7 @@ moveBallUpOnce map charOnWhichBallIsSitting (ballRow, ballColumn) =
 
 moveBallDown ::  [String] -> Char -> (Int, Int) -> [String] -> [String]
 moveBallDown map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir = 
-        if (ballRow < length map)
+        if (ballRow < length map - 1)
                 then 
                         case nextChar of
                                 '-' -> moveBallDown (moveBallDownOnce map charOnWhichBallIsSitting (ballRow, ballColumn)) nextChar (ballRow +1, ballColumn) nextDir
@@ -200,7 +201,9 @@ moveBallDown map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir =
                                 
                                 'p' ->  if (nextDir == [['p']]) then moveBallDownOnce map charOnWhichBallIsSitting (ballRow, ballColumn)
                                         else moveBallDown (moveBallDownOnce map charOnWhichBallIsSitting (ballRow, ballColumn)) nextChar (ballRow +1, ballColumn) nextDir
-                                
+
+                                't' ->  moveBallDownOnce map charOnWhichBallIsSitting (ballRow, ballColumn)
+
                                 _   -> map
         else map
         where 
@@ -229,7 +232,9 @@ moveBallRight s charOnWhichBallIsSitting ballposition nextDir =
                                 else moveBallRight (moveBallRightOnce s charOnWhichBallIsSitting ballposition)  (s !! (ballposition + 2)) (ballposition + 2) nextDir 
                         
                         'p' ->  if (nextDir == [['p']]) then moveBallRightOnce s charOnWhichBallIsSitting ballposition
-                                else moveBallRight (moveBallRightOnce s charOnWhichBallIsSitting ballposition)  (s !! (ballposition + 2)) (ballposition + 2) nextDir 
+                                else moveBallRight (moveBallRightOnce s charOnWhichBallIsSitting ballposition)  (s !! (ballposition + 2)) (ballposition + 2) nextDir
+                        
+                        't' ->  moveBallRightOnce s charOnWhichBallIsSitting ballposition 
                         
                         _ -> s            
         else s
@@ -256,7 +261,8 @@ moveBallLeft s charOnWhichBallIsSitting ballposition nextDir =
                         
                         'p' ->  if (nextDir == [['p']]) then moveBallLeftOnce s charOnWhichBallIsSitting ballposition
                                 else moveBallLeft (moveBallLeftOnce s charOnWhichBallIsSitting ballposition)  (s !! (ballposition - 2)) (ballposition - 2) nextDir
-                        
+
+                        't' ->  moveBallLeftOnce s charOnWhichBallIsSitting ballposition                        
                         _ -> s
         else s
 
