@@ -181,14 +181,14 @@ getSaveMap = do
                 let savedMap = filter (isSuffixOf "savedMap.txt") all
                 return savedMap
 
-saveMap :: [String] -> IO () -- is an IO action
+saveMap :: [String] -> IO ()
 saveMap map =  writeFile "savedMap.txt" (mapToString map)
 
 mapToString :: [String] -> String
 mapToString [] = ""
 mapToString (s:ss) = s ++ [','] ++ (mapToString ss)
 
--- maze (ballX, ballY) [] bonusCount [(ballX, ballY, bonusCount)])
+
 getHint :: [String] -> [String]
 getHint maze  = take 1 (optimalSolution maze)
 
@@ -362,4 +362,3 @@ moveBallLeft s charOnWhichBallIsSitting ballposition nextDir =
 moveBallLeftOnce :: String -> Char -> Int -> String
 moveBallLeftOnce s charOnWhichBallIsSitting ballposition = 
         take (ballposition - 2) s ++ ['@'] ++ [' '] ++ [charOnWhichBallIsSitting] ++ [' '] ++ drop (ballposition +2 ) s
-        
