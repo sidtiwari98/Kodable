@@ -1,16 +1,5 @@
-module MazeSolver (
-    isSolvable,
-    solveMaze,
-    newPositionOfBall,
-    getPossibleDirections,
-    dimensionOfMaze,
-    notInVisited,
-    upPossible,
-    downPossible,
-    rightPossible,
-    leftPossible
-)where
-import Kodable
+import CommonMapFunctions
+-- import Kodable
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
@@ -33,12 +22,6 @@ solveMaze maze (ballX, ballY) visited currentDirection
         newVisited = visited ++ map (\direction -> newPositionOfBall (ballX, ballY) direction) possibleDirections
         possibleDirections = getPossibleDirections maze (ballX, ballY) visited currentDirection
 
-newPositionOfBall :: (Int, Int) -> String -> (Int, Int)
-newPositionOfBall (ballX, ballY) "Up" = (ballX - 1, ballY)
-newPositionOfBall (ballX, ballY) "Right" = (ballX, ballY + 2)
-newPositionOfBall (ballX, ballY) "Down" = (ballX + 1, ballY)
-newPositionOfBall (ballX, ballY) "Left" = (ballX, ballY - 2)
-
 getPossibleDirections :: [String] -> (Int, Int) -> [(Int, Int)] -> String -> [String]
 getPossibleDirections maze (ballX, ballY) visited currentDirection
     | (maze !! ballX) !! ballY == '@' = filter (/= "") [moveUp, moveDown, moveRight, moveLeft]
@@ -52,9 +35,6 @@ getPossibleDirections maze (ballX, ballY) visited currentDirection
         moveDown = downPossible maze (ballX, ballY) visited 
         moveRight = rightPossible maze (ballX, ballY) visited 
         moveLeft = leftPossible maze (ballX, ballY) visited 
-
-dimensionOfMaze :: [String] -> (Int, Int)
-dimensionOfMaze maze = (length maze,  length $ head maze)
 
 notInVisited :: (Int, Int) -> [(Int, Int)] -> Bool
 notInVisited (ballX, ballY) visited = not (elem (ballX, ballY) visited)

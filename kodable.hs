@@ -1,24 +1,5 @@
-module Kodable
-(
-        load,
-        play,
-        stringSplit,
-        getBallPositionOnPrevMap,
-        getDirections,
-        parseDirections,
-        parseLoop,
-        makeMove,
-        moveBallUp,
-        moveBallUpOnce,
-        moveBallDown,
-        moveBallDownOnce,
-        moveBallRight,
-        moveBallRightOnce,
-        moveBallLeft,
-        moveBallLeftOnce,
-        currentPositionOfCharacters,
-        showMap
-) where 
+import CommonMapFunctions
+import OptimalSolution
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
@@ -27,12 +8,9 @@ import Data.Char
 import Data.List
 import Text.Printf
 
-load :: IO()
-load = do
-        putStrLn "Enter the file name you want to load"
-        xs <- getLine
-        putStrLn "Loading your file..."
-        textContents <- readFile xs
+load :: String -> IO()
+load s = do
+        textContents <- readFile s
         let map = lines textContents
         showMap map
         putStrLn "File loaded"
@@ -58,28 +36,55 @@ load = do
                 else
                         do
                                 putStrLn "Invalid command, start from beginning"
-                                load    
+                                load s  
 
 play :: [String] -> [String] -> Char -> IO()
-play _ [] _ = return ()
+play map [] charOnWhichBallIsSitting = 
+        do
+                if charOnWhichBallIsSitting == 't'
+                        then 
+                                putStrLn "Congratulations, you win the game!"
+                else
+                        do
+                                putStrLn "The game has not been completed.For a hint type \"hint\" or enter any key to quit"
+                                putStrLn "For hint, please wait a few seconds for a hint to appear"
+                                command <- getLine
+                                if (command == "hint")
+                                        then do
+                                                let (ballX, ballY) =  head (currentPositionOfCharacters map '@')
+                                                let [hint] = getHint map (ballX, ballY) (3 - length (currentPositionOfCharacters map 'b'))
+                                                putStr "Try playing -> "
+                                                putStrLn hint
+                                                directions <- getDirections (1) [] []
+                                                play map directions ('-')
+                                else
+                                        do
+                                                putStrLn "You have lost the game :("
+                                                return ()
+
+
 play map directions charOnWhichBallIsSitting = 
         do
-                let updatedMap = makeMove map directions charOnWhichBallIsSitting
-
-                if (map == updatedMap)
-                        then do
-                                if (length (head(directions)) == 1)
-                                        then do
-                                                putStr "Sorry, error: The colour "
-                                                putStr (head(directions))
-                                                putStrLn " was not found"
-                                else 
-                                        do        
-                                                putStr "Sorry, error: cannot move to the "
-                                                putStrLn (head(directions))
-                                
-                                putStrLn "Your current Board :"
-                                showMap updatedMap
+                if charOnWhichBallIsSitting == 't'
+                        then
+                              putStrLn "Congratulations, you win the game!"
+                else
+                        do  
+                        let updatedMap = makeMove map directions charOnWhichBallIsSitting
+                        if (map == updatedMap)
+                                then do
+                                        if (length (head(directions)) == 1)
+                                                then do
+                                                        putStr "Sorry, error: The colour "
+                                                        putStr (head(directions))
+                                                        putStrLn " was not found"
+                                        else 
+                                                do        
+                                                        putStr "Sorry, error: cannot move to the "
+                                                        putStrLn (head(directions))
+                                        
+                                        putStrLn "Your current Board :"
+                                        showMap updatedMap
                         else do
                                 showMap updatedMap   
                                 let bonusEarned = 3 - length (currentPositionOfCharacters updatedMap 'b')
@@ -92,13 +97,17 @@ play map directions charOnWhichBallIsSitting =
                                                 putStrLn " "  
                                 else
                                         putStrLn " " 
+
                                 let (ballXNew, ballYNew) =  head (currentPositionOfCharacters updatedMap '@')
                                 if ([[(map !! ballXNew)!! ballYNew]] == take 1 (tail directions))
-                                        then 
-                                                play updatedMap (drop 2 directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))
+                                then 
+                                        play updatedMap (drop 2 directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))
                                 else
                                         play updatedMap (tail directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))   
 
+-- maze (ballX, ballY) [] bonusCount [(ballX, ballY, bonusCount)])
+getHint :: [String] -> (Int, Int) -> Int -> [String]
+getHint maze (ballX, ballY) bonusCount = take 1 (optimalPathShortner $ optimalPath (allSolution maze (ballX, ballY) [] bonusCount [(ballX, ballY, bonusCount)]))
 
 -- stringSplit ',' "a,b,c"
 stringSplit :: Eq a => a -> [a] -> [[a]]
@@ -139,6 +148,8 @@ parseDirections directions
 
 parseLoop :: String -> Int -> [String]
 parseLoop loopCommand iterations = concat $ replicate iterations (stringSplit ',' loopCommand)
+
+-- getHint :: [String] -> 
 
 makeMove :: [String] -> [String] -> Char -> [String]
 makeMove map (d:ds) charOnWhichBallIsSitting
@@ -269,12 +280,4 @@ moveBallLeft s charOnWhichBallIsSitting ballposition nextDir =
 moveBallLeftOnce :: String -> Char -> Int -> String
 moveBallLeftOnce s charOnWhichBallIsSitting ballposition = 
         take (ballposition - 2) s ++ ['@'] ++ [' '] ++ [charOnWhichBallIsSitting] ++ [' '] ++ drop (ballposition +2 ) s
-
-currentPositionOfCharacters :: [String] -> Char -> [(Int,Int)]
-currentPositionOfCharacters map c = [ (x,y) | (mapElement, x) <- zip map [0..], y <- elemIndices c mapElement, elem c mapElement]
-
-showMap :: [String] -> IO()
-showMap [] = return ()
-showMap (l:ls) = do
-    putStrLn l
-    showMap ls         
+        

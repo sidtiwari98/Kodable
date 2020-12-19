@@ -1,5 +1,9 @@
-import MazeSolver
-import Kodable
+module OptimalSolution (
+    allSolution,
+    optimalPathShortner,
+    optimalPath
+) where
+import CommonMapFunctions
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
