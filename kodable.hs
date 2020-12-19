@@ -1,5 +1,6 @@
 import CommonMapFunctions
 import OptimalSolution
+import MazeSolver
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
@@ -7,67 +8,136 @@ import System.IO
 import Data.Char
 import Data.List
 import Text.Printf
+import System.Directory
 
 load :: String -> IO()
-load s = do
+load s= do
         textContents <- readFile s
         let map = lines textContents
+        putStrLn "File loaded!"
+        putStrLn "Initial: "
         showMap map
-        putStrLn "File loaded"
-        putStrLn "Enter play to begin game"
-        nextCommand <- getLine
-        if (nextCommand == "play") 
-                then do 
-                        directions <- getDirections (-1) [] []
-                        if (length directions == 0) then
-                                putStrLn "Invalid move"
-                        else
-                                play map directions '-'
-        else
-                if (take 5 nextCommand == "play ")
+        putStrLn "Enter:"
+        putStrLn "check - to see if map is solvable"
+        putStrLn "solve - to get the solution of the map"
+        putStrLn "quit - to quit the game"
+        putStrLn "play - to begin game"
+        nextCommand <- getLine 
+        gameCommandHandler map s nextCommand           
+
+loadSavedMap :: IO()
+loadSavedMap = do
+                savedMap <- getSaveMap
+                if (length (savedMap) == 0)
                         then do
-                                let functionDirections = stringSplit ' ' (drop 5 nextCommand)
-                                directions <- getDirections (-1) [] functionDirections
-                                if (length directions == 0) then
-                                        putStrLn "Invalid move"
-                                else
-                                        play map directions '-'
-                                -- play map directions '-'
+                                putStrLn "You have no saved map. Please use load function to load a new map"
                 else
                         do
-                                putStrLn "Invalid command, start from beginning"
-                                load s  
+                                textContents <- readFile "savedMap.txt"
+                                let map = stringSplit ',' textContents
+                                putStrLn "File loaded!"
+                                putStrLn "Initial: "
+                                showMap map
+                                putStrLn "Enter:"
+                                putStrLn "check - to see if map is solvable"
+                                putStrLn "solve - to get the solution of the map"
+                                putStrLn "quit - to quit the game"
+                                putStrLn "play - to begin game"
+                                nextCommand <- getLine
+                                gameCommandHandler map "saveMap.txt" nextCommand                  
+
+
+gameCommandHandler :: [String] -> String -> String -> IO()
+gameCommandHandler map filename command = do
+                        if (take 5 command == "play ")
+                                then do
+                                        let functionDirections = stringSplit ' ' (drop 5 command)
+                                        directions <- getDirections (-1) [] functionDirections
+                                        if (length directions == 0) then
+                                                putStrLn "Invalid move"
+                                        else
+                                                play map directions '-'
+                        else
+                                do
+                                case command of
+                                        "play" -> do 
+                                                        directions <- getDirections (-1) [] []
+                                                        if (length directions == 0) then
+                                                                putStrLn "Invalid move"
+                                                        else
+                                                                play map directions '-'
+                                        "hint" -> do
+                                                        let [hint] = getHint map
+                                                        putStr "Try playing -> "
+                                                        putStrLn hint
+                                                        directions <- getDirections (1) [] []
+                                                        play map directions ('-')
+                                        "quit"  -> do
+                                                        putStrLn "You have lost the game :("
+                                                        return ()
+                                        
+                                        "save"  -> do
+                                                       saveMap map     
+
+                                        "check" -> do
+                                                        if (isSolvable map) then do
+                                                                putStrLn "The map is solvable"
+                                                                putStrLn "Enter:"
+                                                                putStrLn "solve - to get the solution of the map"
+                                                                putStrLn "quit - to quit the game"
+                                                                putStrLn "play - to begin game"
+                                                                command <- getLine
+                                                                gameCommandHandler map filename command
+                                                        else
+                                                              putStrLn "The map is not solvable. Load the game with a solvable map" 
+                                        "solve" -> do
+                                                        if (isSolvable map) then do
+                                                                let solution = optimalSolution map
+                                                                putStrLn "The solution is: "
+                                                                putStrLn (mapToString solution)
+                                                                putStrLn "Enter:"
+                                                                putStrLn "quit - to quit the game"
+                                                                putStrLn "play - to begin game"  
+                                                        else
+                                                               putStrLn "The map is not solvable. Load the game with a solvable map"                      
+                                                                        
+                                        _       ->      do
+                                                                putStrLn "Invalid command, start from beginning"
+                                                                load filename                        
+            
 
 play :: [String] -> [String] -> Char -> IO()
 play map [] charOnWhichBallIsSitting = 
         do
                 if charOnWhichBallIsSitting == 't'
-                        then 
-                                putStrLn "Congratulations, you win the game!"
-                else
-                        do
-                                putStrLn "The game has not been completed.For a hint type \"hint\" or enter any key to quit"
-                                putStrLn "For hint, please wait a few seconds for a hint to appear"
-                                command <- getLine
-                                if (command == "hint")
-                                        then do
-                                                let (ballX, ballY) =  head (currentPositionOfCharacters map '@')
-                                                let [hint] = getHint map (ballX, ballY) (3 - length (currentPositionOfCharacters map 'b'))
-                                                putStr "Try playing -> "
-                                                putStrLn hint
-                                                directions <- getDirections (1) [] []
-                                                play map directions ('-')
+                        then do
+                                if (length (currentPositionOfCharacters map 'b') == 0)
+                                then 
+                                        putStrLn "Congratulations, you win the game!"
                                 else
                                         do
-                                                putStrLn "You have lost the game :("
-                                                return ()
-
+                                                putStrLn "You have won the game but did not collect all 3 bonuses!"
+                                                putStr "Your bonus count is "
+                                                putStrLn (show $ 3- length (currentPositionOfCharacters map 'b')) 
+                else
+                        do
+                                putStrLn "The game has not been completed.For a hint type \"hint\". To save type \"save\". To quit type quit \"quit\""
+                                putStrLn "For hint, please wait a few seconds for a hint to appear"
+                                command <- getLine
+                                gameCommandHandler map "none" command
 
 play map directions charOnWhichBallIsSitting = 
         do
                 if charOnWhichBallIsSitting == 't'
                         then
-                              putStrLn "Congratulations, you win the game!"
+                                if (length (currentPositionOfCharacters map 'b') == 0)
+                                then 
+                                        putStrLn "Congratulations, you win the game!"
+                                else
+                                        do
+                                                putStrLn "You have won the game but did not collect all 3 bonuses!"
+                                                putStr "Your bonus count is "
+                                                putStrLn (show $ 3- length (currentPositionOfCharacters map 'b')) 
                 else
                         do  
                         let updatedMap = makeMove map directions charOnWhichBallIsSitting
@@ -103,11 +173,24 @@ play map directions charOnWhichBallIsSitting =
                                 then 
                                         play updatedMap (drop 2 directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))
                                 else
-                                        play updatedMap (tail directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))   
+                                        play updatedMap (tail directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))  
+
+getSaveMap :: IO [String]
+getSaveMap = do 
+                all <- getDirectoryContents "./"
+                let savedMap = filter (isSuffixOf "savedMap.txt") all
+                return savedMap
+
+saveMap :: [String] -> IO () -- is an IO action
+saveMap map =  writeFile "savedMap.txt" (mapToString map)
+
+mapToString :: [String] -> String
+mapToString [] = ""
+mapToString (s:ss) = s ++ [','] ++ (mapToString ss)
 
 -- maze (ballX, ballY) [] bonusCount [(ballX, ballY, bonusCount)])
-getHint :: [String] -> (Int, Int) -> Int -> [String]
-getHint maze (ballX, ballY) bonusCount = take 1 (optimalPathShortner $ optimalPath (allSolution maze (ballX, ballY) [] bonusCount [(ballX, ballY, bonusCount)]))
+getHint :: [String] -> [String]
+getHint maze  = take 1 (optimalSolution maze)
 
 -- stringSplit ',' "a,b,c"
 stringSplit :: Eq a => a -> [a] -> [[a]]
@@ -149,7 +232,6 @@ parseDirections directions
 parseLoop :: String -> Int -> [String]
 parseLoop loopCommand iterations = concat $ replicate iterations (stringSplit ',' loopCommand)
 
--- getHint :: [String] -> 
 
 makeMove :: [String] -> [String] -> Char -> [String]
 makeMove map (d:ds) charOnWhichBallIsSitting

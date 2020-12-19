@@ -1,5 +1,7 @@
+module MazeSolver (
+    isSolvable
+) where
 import CommonMapFunctions
--- import Kodable
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State

@@ -1,7 +1,5 @@
 module OptimalSolution (
-    allSolution,
-    optimalPathShortner,
-    optimalPath
+    optimalSolution
 ) where
 import CommonMapFunctions
 import Control.Applicative
