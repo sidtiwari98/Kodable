@@ -1,5 +1,6 @@
 module OptimalSolution (
-    optimalSolution
+    optimalSolution,
+    allSolution
 ) where
 import CommonMapFunctions
 import Control.Applicative
@@ -12,7 +13,7 @@ import Text.Printf
 import Data.Ord
 
 optimalSolution :: [String] -> [String]
-optimalSolution maze = optimalPathShortner $ optimalPath (map optimalPathShortner allSolutions)
+optimalSolution maze = optimalPath (map optimalPathShortner allSolutions)
                         where
                             (ballX, ballY) = head $ currentPositionOfCharacters maze '@'
                             bonusCount = 3 - length (currentPositionOfCharacters maze 'b')

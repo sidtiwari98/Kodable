@@ -2,8 +2,7 @@ module CommonMapFunctions (
     currentPositionOfCharacters,
     newPositionOfBall,
     dimensionOfMaze,
-    showMap,
-    isMapValid
+    showMap
 )where 
 import Control.Applicative
 import Control.Monad
@@ -31,12 +30,3 @@ showMap [] = return ()
 showMap (l:ls) = do
     putStrLn l
     showMap ls
-
-isMapValid :: [String] -> Bool
-isMapValid map
-        | (length numberOfBall) == 1 && (length numberOfTarget) == 1 && (length numberOfBonus) == 3 = True
-        | otherwise =  False
-        where
-                numberOfBall = currentPositionOfCharacters map '@'
-                numberOfTarget =  currentPositionOfCharacters map 't'
-                numberOfBonus = currentPositionOfCharacters map 'b'    
