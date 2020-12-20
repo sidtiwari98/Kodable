@@ -68,12 +68,18 @@ gameCommandHandler map filename command = do
                         if (take 5 command == "play ")
                                 then do
                                         let functionDirections = stringSplit ' ' (drop 5 command)
-                                        directions <- getDirections (-1) [] functionDirections
-                                        if (length directions == 0) then do
-                                                putStrLn "Invalid move"
-                                                putStrLn " "
+                                        if (isFunctionDirectionValid functionDirections)
+                                                then do
+                                                        directions <- getDirections (-1) [] functionDirections
+                                                        if (length directions == 0) then do
+                                                                putStrLn "Invalid move"
+                                                                putStrLn " "
+                                                        else
+                                                                play map directions '-'
                                         else
-                                                play map directions '-'
+                                                do
+                                                        putStrLn "Your function contains invalid move(s)."
+                                                        load filename
                         else
                                 do
                                 case command of
@@ -86,8 +92,7 @@ gameCommandHandler map filename command = do
                                                                 play map directions '-'
                                         "hint" -> do
                                                         let [hint] = getHint map
-                                                        putStr "Try playing -> "
-                                                        putStrLn hint
+                                                        putStrLn ("Try playing -> " ++ hint)
                                                         directions <- getDirections (1) [] []
                                                         putStrLn " "
                                                         play map directions ('-')
@@ -135,7 +140,7 @@ gameCommandHandler map filename command = do
                                                                 putStrLn "The map is invalid. Please ensure you have 1 ball, 1 target, 3 bonuses and all bonuses SHOULD be reachable."                      
                                                                         
                                         _       ->      do
-                                                                putStrLn "Invalid command, start from beginning"
+                                                                putStrLn "INVALID COMMAND, start from beginning"
                                                                 load filename                        
             
 
@@ -150,8 +155,7 @@ play map [] charOnWhichBallIsSitting =
                                 else
                                         do
                                                 putStrLn "You have won the game but did not collect all 3 bonuses!"
-                                                putStr "Your bonus count is "
-                                                putStrLn (show $ 3- length (currentPositionOfCharacters map 'b')) 
+                                                putStrLn ("Your bonus count is " ++ (show $ 3- length (currentPositionOfCharacters map 'b'))) 
                 else
                         do
                                 putStrLn "The game has not been completed.For a hint type \"hint\". To save type \"save\". To quit type quit \"quit\"."
@@ -171,34 +175,25 @@ play map directions charOnWhichBallIsSitting =
                                 else
                                         do
                                                 putStrLn "You have won the game but did not collect all 3 bonuses!"
-                                                putStr "Your bonus count is "
-                                                putStrLn (show $ 3- length (currentPositionOfCharacters map 'b')) 
+                                                putStrLn ("Your bonus count is " ++ (show $ 3- length (currentPositionOfCharacters map 'b'))) 
                 else
                         do  
                         let updatedMap = makeMove map directions charOnWhichBallIsSitting
                         if (map == updatedMap)
                                 then do
+                                        let [hint] = getHint map
                                         if (length (head(directions)) == 1)
                                                 then do
-                                                        putStr "Sorry, error: The colour "
-                                                        putStr (head(directions))
-                                                        putStrLn " was not found"
+                                                        putStrLn ("Sorry, error: The colour " ++ (head(directions)) ++ " was not found")
                                                         putStrLn " "
-                                                        let [hint] = getHint map
-                                                        putStr "Next time try playing "
-                                                        putStr hint
-                                                        putStrLn " at this stage"
+                                                        putStrLn ("Next time try playing " ++ hint ++ " at this stage")
                                                         putStrLn ""
 
                                         else 
                                                 do        
-                                                        putStr "Sorry, error: cannot move to the "
-                                                        putStrLn (head(directions))
+                                                        putStrLn ("Sorry, error: cannot move to the " ++ (head(directions)))
                                                         putStrLn " "
-                                                        let [hint] = getHint map
-                                                        putStr "Next time try playing "
-                                                        putStr hint
-                                                        putStrLn " at this stage"
+                                                        putStrLn ("Next time try playing " ++ hint ++ " at this stage")
                                                         putStrLn " "
                                         
                                         putStrLn "Your current Board :"
@@ -210,9 +205,7 @@ play map directions charOnWhichBallIsSitting =
                                 let prevBonus = 3 - length (currentPositionOfCharacters map 'b')
                                 if (bonusEarned /= prevBonus)
                                         then do
-                                                putStr "Got "
-                                                putStr $ show (bonusEarned)
-                                                putStrLn " bonus"
+                                                putStrLn ("Got " ++ (show (bonusEarned)) ++ "bonus")
                                                 putStrLn " "  
                                 else
                                         putStrLn " " 
@@ -237,13 +230,16 @@ getDirections x directions functionDirections = do
                 putStrLn " "
                 return directions
         else
-                case direction of
-                        "Function"      -> getDirections (x+1) (directions ++ concatMap parseDirections functionDirections) functionDirections
-                        "Undo"          -> getDirections (x+1) (take (length (directions) - 1) directions) functionDirections
-                        _               -> getDirections (x+1) (directions ++ parseDirections direction) functionDirections
-                -- if (direction == "Function")
-                --         then getDirections (x+1) (directions ++ concatMap parseDirections functionDirections) functionDirections
-                -- else getDirections (x+1) (directions ++ parseDirections direction) functionDirections
+                do
+                        if (isNormalDirection direction || isCondValid direction || isLoopValid direction)
+                                then do        
+                                        case direction of
+                                                "Function"      -> getDirections (x+1) (directions ++ concatMap parseDirections functionDirections) functionDirections
+                                                "Undo"          -> getDirections (x+1) (take (length (directions) - 1) directions) functionDirections
+                                                _               -> getDirections (x+1) (directions ++ parseDirections direction) functionDirections
+                        else do
+                               putStrLn "INVALID MOVE"
+                               getDirections (x+1) (directions) functionDirections 
 
 parseDirections :: String -> [String]
 parseDirections directions
@@ -256,7 +252,6 @@ parseDirections directions
 
 parseLoop :: String -> Int -> [String]
 parseLoop loopCommand iterations = concat $ replicate iterations (stringSplit ',' loopCommand)
-
 
 getSaveMap :: IO [String]
 getSaveMap = do 
@@ -297,6 +292,37 @@ isMapValid map
                 allBonusReachable =  
                         if (allSolution map (fst( head $ ball), snd( head $ ball)) [] (3 - (length $ bonuses)) [(fst(head $ ball), snd(head $ ball), 3 - (length $ bonuses))] == [] ) 
                                         then False else True
+
+
+isFunctionDirectionValid :: [String] -> Bool
+isFunctionDirectionValid (d1:d2:d3:ds)
+        | length (ds) > 0 = False
+        | (isNormalDirection d1 || isCondValid d1) && (isNormalDirection d2 || isCondValid d2) && (isNormalDirection d3 || isCondValid d3) = True
+        | take 4 d1 == "Loop" || take 4 d2 == "Loop" || take 4 d3 == "Loop" = False
+        | otherwise = False
+
+isNormalDirection :: String -> Bool
+isNormalDirection dir
+        | dir `elem` ["Right", "Left", "Up", "Down"] = True
+        | otherwise = False
+
+isCondValid :: String -> Bool
+isCondValid dir 
+        | length dir > 4 && take 4 dir == "Cond" && ( colour `elem` ["o", "p", "y"]) && isNormalDirection (normalDir) = True
+        | otherwise = False
+        where
+                colour = drop 5 (take 6 dir)
+                normalDir = drop 8 (take (length dir - 1) dir)
+
+isLoopValid :: String -> Bool
+isLoopValid dir 
+        | length dir > 4 && take 4 dir == "Loop" && ((read number :: Int) <= 5) && length (loopDirections) == 2 && d1Valid && d2Valid = True
+        | otherwise = False
+        where
+                number  = drop 5 (take 6 dir)
+                loopDirections = stringSplit ',' (drop 8 (take (length dir - 1) dir))
+                d1Valid = isNormalDirection (head loopDirections) || isCondValid (head loopDirections)
+                d2Valid = isNormalDirection (concat (tail loopDirections)) || isCondValid (concat (tail loopDirections))
 
 makeMove :: [String] -> [String] -> Char -> [String]
 makeMove map (d:ds) charOnWhichBallIsSitting
