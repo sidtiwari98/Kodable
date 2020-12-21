@@ -1,6 +1,7 @@
 module OptimalSolution (
     optimalSolution,
-    allSolution
+    allSolution,
+    compressOptSol
 ) where
 import CommonMapFunctions
 import Control.Applicative
@@ -29,6 +30,50 @@ optimalPathShortner (d1: d2: d) =   if d1 == take (length(d2) - 1 - 8) (drop 8 d
                                 
 optimalPath :: (Foldable t1, Foldable t2) => t1 (t2 a) -> t2 a
 optimalPath allsolutions = minimumBy (comparing length) allsolutions
+
+compressOptSol :: [String] -> [String]
+compressOptSol solution = compressOptSolUtil solution 0 [] False [] 0 []
+
+--I developed the logic of this function with Kush Baheti (UID - 3035436583)
+compressOptSolUtil :: (Eq a, Num a, Show a) => [String] -> Int -> [String] -> Bool -> [String] -> a -> [String] -> [String]
+compressOptSolUtil solution i alreadyParsed fBranch loopPrevPair loopCounter func = 
+    optimalPath $ [loopResult, singleResult, functionResult]
+    where
+        loopPair = [solution !! i] ++ [solution !! (i + 1)] 
+        loopCount = if (loopPair == loopPrevPair) 
+                        then (loopCounter + 1) 
+                        else 1 
+        loopIntermediateParsed = if ((loopPair == loopPrevPair) && (loopCounter == 1)) 
+                            then take ((length alreadyParsed) - 1) alreadyParsed
+                            else alreadyParsed
+        loopNumber = show loopCount
+        loopDir1 = head loopPair
+        loopDir2 = concat $ tail loopPair
+        loopParsed' =  (take ((length loopIntermediateParsed) - 1) loopIntermediateParsed) ++ [("Loop{" ++ loopNumber ++ "}{" ++ loopDir1 ++ "," ++ loopDir2 ++ "}")]
+        loopParsed = if (loopPair == loopPrevPair) then loopParsed' else (alreadyParsed ++ loopPair)
+        singleParsed = alreadyParsed ++ [solution !! i]
+        functionParsed = if (fBranch == True) 
+                            then 
+                                (take ((length alreadyParsed) - 1) alreadyParsed) ++ ["Function"] 
+                            else (alreadyParsed ++ drop i solution) 
+        currentFunc = if (fBranch == True) 
+                            then [solution !! (i -1)] ++ [solution !! i] ++ [solution !! (i +1)] 
+                            else []
+
+        loopResult = if (i + 2 < length solution) 
+                    then compressOptSolUtil solution (i+2) loopParsed False loopPair loopCount func 
+                    else (alreadyParsed ++ drop i solution) 
+
+        functionResult = 
+            if ( ((i +1) < length solution) && (fBranch == True) && ((func == []) || (func /= [] && currentFunc == func))) 
+                then 
+                    compressOptSolUtil solution (i+2) functionParsed False [] 0 currentFunc 
+                else (alreadyParsed ++ drop i solution)
+
+        singleResult = if (i < length solution) 
+                            then 
+                                compressOptSolUtil solution (i + 1) singleParsed True [] 0 func 
+                            else alreadyParsed
 
 allSolution :: [String] -> (Int, Int) -> [String] -> Int -> [(Int, Int, Int)] -> [[String]]
 allSolution maze (ballX, ballY) currentSolution bonusCount visited

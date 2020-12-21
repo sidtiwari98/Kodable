@@ -129,9 +129,15 @@ gameCommandHandler map filename command = do
                                                                 let solution = optimalSolution map
                                                                 putStrLn "The solution is: "
                                                                 putStrLn (mapToString solution ' ')
+                                                                let compressedSol = compressOptSol solution
+                                                                putStrLn " "
+                                                                putStrLn "(Beta version) The most compressed solution is: "
+                                                                putStrLn (mapToString compressedSol ' ')
+                                                                putStrLn " "
                                                                 putStrLn "Enter:"
                                                                 putStrLn "quit - to quit the game"
                                                                 putStrLn "play - to begin game" 
+                                                                putStrLn " "
                                                                 command <- getLine
                                                                 gameCommandHandler map filename command                                                                 
                                                         else do
