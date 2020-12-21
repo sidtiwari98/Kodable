@@ -10,6 +10,9 @@ import Data.List
 import Text.Printf
 import System.Directory
 
+
+-- This function takes a filename (.txt) which contains the map and displays it on the terminal followed by the game interface.
+-- It also checks if the map is valid or invalid.
 load :: String -> IO()
 load s= do
         textContents <- readFile s
@@ -36,10 +39,11 @@ load s= do
                         gameCommandHandler map s nextCommand  
         else 
                 do
-                        putStrLn "The map is invalid. Please ensure you have 1 ball, 1 target, 3 bonuses and all bonuses SHOULD be reachable."
+                        putStrLn "The map is invalid. Please ensure you have 1 ball, 1 target and 3 bonuses."
                         putStrLn " "
                         return ()          
 
+-- This loads a saved map stored in savedMap.txt. It displays it on the terminal followed by the game interface.
 loadSavedMap :: IO()
 loadSavedMap = do
                 savedMap <- getSaveMap
@@ -62,7 +66,9 @@ loadSavedMap = do
                                 nextCommand <- getLine
                                 gameCommandHandler map "saveMap.txt" nextCommand                 
 
-
+--This is the central command hanlding function for all the commands entered by the user.
+--It matches the commands input and returns the corresponding outputs
+-- For an invalid command it outputs Invalid command 
 gameCommandHandler :: [String] -> String -> String -> IO()
 gameCommandHandler map filename command = do
                         if (take 5 command == "play ")
@@ -121,8 +127,7 @@ gameCommandHandler map filename command = do
                                                                 gameCommandHandler map filename command
                                                         else do
                                                                 putStrLn " "   
-                                                                putStrLn "The map is not solvable. Load the game with a solvable map"
-                                                                putStrLn "The map is invalid. Please ensure you have 1 ball, 1 target, 3 bonuses and all bonuses SHOULD be reachable." 
+                                                                putStrLn "The map is not solvable. Load the game with a solvable map" 
                                         "solve" -> do
                                                         if (isSolvable map) then do
                                                                 putStrLn " " 
@@ -142,14 +147,16 @@ gameCommandHandler map filename command = do
                                                                 gameCommandHandler map filename command                                                                 
                                                         else do
                                                                 putStrLn " "  
-                                                                putStrLn "The map is not solvable. Load the game with a solvable map"
-                                                                putStrLn "The map is invalid. Please ensure you have 1 ball, 1 target, 3 bonuses and all bonuses SHOULD be reachable."                      
+                                                                putStrLn "The map is not solvable. Load the game with a solvable map"      
                                                                         
                                         _       ->      do
                                                                 putStrLn "INVALID COMMAND, start from beginning"
                                                                 load filename                        
             
-
+-- main function to sequentially play the directions inoutted by the user
+-- checks for game win, prints the map after every move, checks for number of bonus eaten
+-- checks for an error like not able to move to a particular direction or colour not found
+-- terminates when direction list is empty.
 play :: [String] -> [String] -> Char -> IO()
 play map [] charOnWhichBallIsSitting = 
         do
@@ -211,7 +218,7 @@ play map directions charOnWhichBallIsSitting =
                                 let prevBonus = 3 - length (currentPositionOfCharacters map 'b')
                                 if (bonusEarned /= prevBonus)
                                         then do
-                                                putStrLn ("Got " ++ (show (bonusEarned)) ++ "bonus")
+                                                putStrLn ("Got " ++ (show (bonusEarned)) ++ " bonus")
                                                 putStrLn " "  
                                 else
                                         putStrLn " " 
@@ -223,6 +230,8 @@ play map directions charOnWhichBallIsSitting =
                                 else
                                         play updatedMap (tail directions) (getBallPositionOnPrevMap map (ballXNew, ballYNew))  
   
+-- Used to get directions input by the user
+-- returns the final list of directions which is later sent back to the play function
 getDirections :: Int -> [String] -> [String] -> IO [String]
 getDirections x directions functionDirections = do
     if (x == -1)
@@ -237,7 +246,7 @@ getDirections x directions functionDirections = do
                 return directions
         else
                 do
-                        if (isNormalDirection direction || isCondValid direction || isLoopValid direction)
+                        if ((isNormalDirection direction) || isCondValid direction || isLoopValid direction || direction `elem` ["Function", "Undo"])
                                 then do        
                                         case direction of
                                                 "Function"      -> getDirections (x+1) (directions ++ concatMap parseDirections functionDirections) functionDirections
@@ -247,6 +256,8 @@ getDirections x directions functionDirections = do
                                putStrLn "INVALID MOVE"
                                getDirections (x+1) (directions) functionDirections 
 
+--parses all the direction inpputted by the user and is used extract the colour from conditional directions
+-- also used to replicate the loop directions n number of times
 parseDirections :: String -> [String]
 parseDirections directions
         | length directions > 4 && take 4 directions == "Cond" = [ [(directions !! 5)] , take (len - 1 - 8) (drop 8 directions) ]
@@ -256,30 +267,37 @@ parseDirections directions
                 len = length(directions)
                 loopParsed = parseLoop (take (len - 8 -1) $ drop 8 directions) (read (take 1 (drop 5 directions)) ::Int)
 
+-- used to replicate the loop directions n number of times
 parseLoop :: String -> Int -> [String]
 parseLoop loopCommand iterations = concat $ replicate iterations (stringSplit ',' loopCommand)
 
+-- gets the map stored in savedMap.txt
 getSaveMap :: IO [String]
 getSaveMap = do 
                 all <- getDirectoryContents "./"
                 let savedMap = filter (isSuffixOf "savedMap.txt") all
                 return savedMap
 
+-- saves a map to savedMap.txt
 saveMap :: [String] -> IO ()
 saveMap map =  writeFile "savedMap.txt" (mapToString map ',')
 
+--converts a list of string to a single string seperated by a delimiter
 mapToString :: [String] -> Char -> String
 mapToString [] d = ""
 mapToString (s:ss) d= s ++ [d] ++ (mapToString ss d)
 
+--gets Hint using the optimalSolution 
 getHint :: [String] -> [String]
 getHint maze  = take 1 (optimalSolution maze)
 
 -- stringSplit ',' "a,b,c"
+-- used to split a string by a delimiter and return a list
 stringSplit :: Eq a => a -> [a] -> [[a]]
 stringSplit d [] = []
 stringSplit d s = x : stringSplit d (drop 1 y) where (x,y) = span (/= d) s
 
+--gets the position of the ball in the map before the updatedMap
 getBallPositionOnPrevMap :: [String] -> (Int,Int) -> Char
 getBallPositionOnPrevMap map (ballXNew, ballYNew) = 
         if (((map !! ballXNew)!! ballYNew) == 'b')
@@ -287,31 +305,32 @@ getBallPositionOnPrevMap map (ballXNew, ballYNew) =
         else
             ((map !! ballXNew)!! ballYNew)
 
+--Checks if the map is valid or not
 isMapValid :: [String] -> Bool
 isMapValid map
-        | (length ball) == 1 && (length target) == 1 && (length bonuses) == 3 && allBonusReachable = True
+        | (length ball) == 1 && (length target) == 1 && (length bonuses) == 3 = True
         | otherwise =  False
         where
                 ball = currentPositionOfCharacters map '@'
                 target =  currentPositionOfCharacters map 't'
                 bonuses = currentPositionOfCharacters map 'b'
-                allBonusReachable =  
-                        if (allSolution map (fst( head $ ball), snd( head $ ball)) [] (3 - (length $ bonuses)) [(fst(head $ ball), snd(head $ ball), 3 - (length $ bonuses))] == [] ) 
-                                        then False else True
 
-
+--Checks if the function directions input are valid or not
 isFunctionDirectionValid :: [String] -> Bool
 isFunctionDirectionValid (d1:d2:d3:ds)
         | length (ds) > 0 = False
         | (isNormalDirection d1 || isCondValid d1) && (isNormalDirection d2 || isCondValid d2) && (isNormalDirection d3 || isCondValid d3) = True
         | take 4 d1 == "Loop" || take 4 d2 == "Loop" || take 4 d3 == "Loop" = False
         | otherwise = False
+isFunctionDirectionValid _ = False
 
+--Checks if the normal direction input is valid or not
 isNormalDirection :: String -> Bool
 isNormalDirection dir
         | dir `elem` ["Right", "Left", "Up", "Down"] = True
         | otherwise = False
 
+--Checks if the condition direction input is valid or not
 isCondValid :: String -> Bool
 isCondValid dir 
         | length dir > 4 && take 4 dir == "Cond" && ( colour `elem` ["o", "p", "y"]) && isNormalDirection (normalDir) = True
@@ -320,6 +339,7 @@ isCondValid dir
                 colour = drop 5 (take 6 dir)
                 normalDir = drop 8 (take (length dir - 1) dir)
 
+--Checks if the loop direction input is valid or not
 isLoopValid :: String -> Bool
 isLoopValid dir 
         | length dir > 4 && take 4 dir == "Loop" && ((read number :: Int) <= 5) && length (loopDirections) == 2 && d1Valid && d2Valid = True
@@ -330,6 +350,8 @@ isLoopValid dir
                 d1Valid = isNormalDirection (head loopDirections) || isCondValid (head loopDirections)
                 d2Valid = isNormalDirection (concat (tail loopDirections)) || isCondValid (concat (tail loopDirections))
 
+--This function takes all the direction inputted by the user and sequentially plays them out
+--It returns the updated map after every move
 makeMove :: [String] -> [String] -> Char -> [String]
 makeMove map (d:ds) charOnWhichBallIsSitting
         | d == "Right" = take ballRow map ++ [moveBallRight (map !! ballRow) charOnWhichBallIsSitting ballColumn (take 1 ds)] ++  drop(ballRow + 1) map
@@ -342,6 +364,8 @@ makeMove map (d:ds) charOnWhichBallIsSitting
                 ballRow = fst(head(positionOfBall))
                 ballColumn = snd(head(positionOfBall))
 
+--This function takes the map and recursively calls moveBallUpOnce until the ball reaches the wall or reaches a colour where it can change direction.
+-- Returns the updated map after moving the ball up as much as possible
 moveBallUp ::  [String] -> Char -> (Int, Int) -> [String] -> [String]
 moveBallUp map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir= 
         if (ballRow > 0)
@@ -367,6 +391,8 @@ moveBallUp map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir=
         where 
                 nextChar = (map !! (ballRow-1)) !! ballColumn
 
+--This funcntion takes the map, character of ball current position, balls current position on the map
+--It returns the updated map after moving ball once up
 moveBallUpOnce :: [String] -> Char -> (Int, Int) -> [String]
 moveBallUpOnce map charOnWhichBallIsSitting (ballRow, ballColumn) = 
         take (ballRow -1) map ++ rowUp ++ rowCurrent ++ drop (ballRow +1) map
@@ -374,6 +400,8 @@ moveBallUpOnce map charOnWhichBallIsSitting (ballRow, ballColumn) =
                 rowUp = [take ballColumn (map !! (ballRow -1)) ++ ['@'] ++ drop (ballColumn + 1) (map !! (ballRow -1))]
                 rowCurrent =[take ballColumn (map !! ballRow ) ++ [charOnWhichBallIsSitting] ++ drop (ballColumn + 1) (map !! ballRow)]
 
+--This function takes the map and recursively calls moveBallDownOnce until the ball reaches the wall or reaches a colour where it can change direction.
+-- Returns the updated map after moving the ball down as mich as possible
 moveBallDown ::  [String] -> Char -> (Int, Int) -> [String] -> [String]
 moveBallDown map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir = 
         if (ballRow < length map - 1)
@@ -399,6 +427,8 @@ moveBallDown map charOnWhichBallIsSitting (ballRow, ballColumn) nextDir =
         where 
                 nextChar = (map !! (ballRow+1)) !! ballColumn
 
+--This funcntion takes the map, character of ball current position, balls current position on the map
+--It returns the updated map after moving ball once down
 moveBallDownOnce :: [String] -> Char -> (Int, Int) -> [String]
 moveBallDownOnce map charOnWhichBallIsSitting (ballRow, ballColumn) = 
         take (ballRow) map ++ rowCurrent ++ rowDown ++ drop (ballRow +2) map
@@ -406,6 +436,8 @@ moveBallDownOnce map charOnWhichBallIsSitting (ballRow, ballColumn) =
                 rowDown = [take ballColumn (map !! (ballRow +1)) ++ ['@'] ++ drop (ballColumn + 1) (map !! (ballRow +1))]
                 rowCurrent =[take ballColumn (map !! ballRow) ++ [charOnWhichBallIsSitting] ++ drop (ballColumn + 1) (map !! ballRow)]
 
+--This function takes a row and recursively calls moveRightOnce until the ball reaches the wall or reaches a colour where it can change direction.
+-- Returns the updated row after moving the ball right as mich as possible
 moveBallRight :: String -> Char -> Int -> [String] -> String
 moveBallRight s charOnWhichBallIsSitting ballposition nextDir = 
         if (ballposition + 2 < length s)
@@ -429,11 +461,15 @@ moveBallRight s charOnWhichBallIsSitting ballposition nextDir =
                         _ -> s            
         else s
 
+--This funcntion takes a row, character of ball current position, balls current position on the row
+--It returns the updated row after moving ball once towards the left
 moveBallRightOnce :: String -> Char -> Int -> String
 moveBallRightOnce s charOnWhichBallIsSitting ballposition = 
         take ballposition s ++ [charOnWhichBallIsSitting] ++ [' '] ++ ['@'] ++ [' '] ++ drop (ballposition + 4) s
 
 
+--This function takes a row and recursively calls moveLeftOnce until the ball reaches the wall or reaches a colour where it can change direction.
+-- Returns the updated row after moving the ball left as mich as possible
 moveBallLeft :: String -> Char -> Int -> [String] -> String
 moveBallLeft s charOnWhichBallIsSitting ballposition nextDir = 
         if (ballposition - 2 >= 0)
@@ -456,6 +492,8 @@ moveBallLeft s charOnWhichBallIsSitting ballposition nextDir =
                         _ -> s
         else s
 
+--This funcntion takes a row, character of ball current position, balls current position on the row
+--It returns the updated row after moving ball once towards the left
 moveBallLeftOnce :: String -> Char -> Int -> String
 moveBallLeftOnce s charOnWhichBallIsSitting ballposition = 
         take (ballposition - 2) s ++ ['@'] ++ [' '] ++ [charOnWhichBallIsSitting] ++ [' '] ++ drop (ballposition +2 ) s
