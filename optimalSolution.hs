@@ -49,7 +49,8 @@ compressOptSol solution = compressOptSolUtil solution 0 [] False [] 0 []
 
 --I developed the logic of this function with Kush Baheti (UID - 3035436583)
 -- This function takes a possible solution and returns the most compressed version of it using loops and functions.
--- this function takes a solution and splits into three branches. 
+-- It returns the smallest solution after performing exhasitive search to calculate the most compressed solution
+-- This function takes a solution and splits into three branches. 
 -- The first branch is for the direction to become a loop, second branch is for the direction to not do anything and third branch is for the direction to become part of a function. 
 -- In every loop branch if a loop already exits and the similar directions come to the branch then the loop counts is incremented by 1. 
 -- This function calls itself recursively to parse every direction and add it to a loop/function or doesn’t change it.  
