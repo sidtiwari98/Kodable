@@ -48,6 +48,12 @@ compressOptSol :: [String] -> [String]
 compressOptSol solution = compressOptSolUtil solution 0 [] False [] 0 []
 
 --I developed the logic of this function with Kush Baheti (UID - 3035436583)
+-- This function takes a possible solution and returns the most compressed version of it using loops and functions.
+-- this function takes a solution and splits into three branches. 
+-- The first branch is for the direction to become a loop, second branch is for the direction to not do anything and third branch is for the direction to become part of a function. 
+-- In every loop branch if a loop already exits and the similar directions come to the branch then the loop counts is incremented by 1. 
+-- This function calls itself recursively to parse every direction and add it to a loop/function or doesn’t change it.  
+-- In the end various compressed solutions are returned out of which the shortest one is taken.
 compressOptSolUtil :: (Eq a, Num a, Show a) => [String] -> Int -> [String] -> Bool -> [String] -> a -> [String] -> [String]
 compressOptSolUtil solution i alreadyParsed fBranch loopPrevPair loopCounter func = 
     optimalPath $ [loopResult, singleResult, functionResult]
@@ -90,6 +96,10 @@ compressOptSolUtil solution i alreadyParsed fBranch loopPrevPair loopCounter fun
 
 --This is the main function which takes a maze, ball position, and empty list [] in which all solutions are added, the current bonus count
 -- the visited nodes and the final target bonus that decides for this fucntion to terminate. 
+-- The function terminates if the ball has reached 't' and the bonus count has been achieved. If this is fulfilled, the current solution is added to a list
+-- If the current ball pos is t but number of bonus eaten is not equal to the target count, then we say that the path is redundant, not optimal and [] list appenended.
+-- If neither of the above 2 conditions are fullfilled we send the ball to all 4 directions and keep appending the various solutions received.
+-- A visited is maintianed which also contains the bonus count which acts as the unique identifier while choosing nodes to go to.
 allSolution :: [String] -> (Int, Int) -> [String] -> Int -> [(Int, Int, Int)] -> Int -> [[String]]
 allSolution maze (ballX, ballY) currentSolution bonusCount visited finalBonus
     | currentCharOfBall == 't' && bonusCount /= finalBonus = []
